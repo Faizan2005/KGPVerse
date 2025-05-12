@@ -12,22 +12,42 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+type Client struct {
+	id   string
+	conn *websocket.Conn
+}
+
+var clients []Client
+
 func ChkError(err error) {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+}
+
+func readLoop(c *websocket.Conn) {
+
+	defer c.Close()
+	for {
+		messageType, message, err := c.NextReader()
+		if err != nil {
+			c.Close()
+			break
+		}
+		msgbytes := make([]byte, 1024)
+		n, err := message.Read(msgbytes)
+		ChkError(err)
+
+		err = c.WriteMessage(messageType, msgbytes[:n])
+		ChkError(err)
+	}
+	log.Printf("Client disconnected")
 }
 func GetConn(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	ChkError(err)
 
-	for {
-		messageType, p, err := conn.ReadMessage()
-		ChkError(err)
-
-		err = conn.WriteMessage(messageType, p)
-		ChkError(err)
-
-	}
+	log.Println("New Client connected")
+	go readLoop(conn)
 }

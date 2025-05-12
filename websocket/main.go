@@ -10,8 +10,8 @@ import (
 func main() {
 
 	http.HandleFunc("/ws", helpers.GetConn)
-	err := http.ListenAndServe(":3333", nil)
 
-	helpers.ChkError(err)
 	log.Printf("Listening for connections")
+	err := http.ListenAndServe(":3333", nil)
+	helpers.ChkError(err)
 }
