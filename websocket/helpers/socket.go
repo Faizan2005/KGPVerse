@@ -12,10 +12,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-type Client struct {
-	id   string
-	conn *websocket.Conn
-}
+type Client map[string]*websocket.Conn
 
 var clients []Client
 
