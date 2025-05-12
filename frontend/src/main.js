@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+const ws = new WebSocket("ws://localhost:3333/ws")
 const config = {
     type: Phaser.AUTO,
     width: 800,
@@ -61,6 +62,10 @@ function create() {
     this.cursors = this.input.keyboard.createCursorKeys();
 }
 
+ws.onopen = function (event) {
+    alert('You are Connected to WebSocket Server');
+};
+
 function update() {
     const speed = 160;
     player.body.setVelocity(0);
@@ -88,6 +93,7 @@ function update() {
 
     // Log the player's position if moving
     if (isMoving) {
+        ws.send(JSON.stringify({'x': player.x, 'y': player.y, 'name': player.name}));
         console.log(`Player Position: x=${player.x}, y=${player.y}`);
     }
 }
