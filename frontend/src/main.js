@@ -2,8 +2,8 @@ import Phaser from 'phaser';
 
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     physics: {
         default: 'arcade',
         arcade: {
@@ -22,9 +22,9 @@ const game = new Phaser.Game(config);
 let player;
 
 function preload() {
-    this.load.tilemapTiledJSON('citymap', 'assets/maps/city.json');
+    this.load.tilemapTiledJSON('citymap', 'assets/maps/map.json');
     this.load.image('citytiles', 'assets/maps/city.png');
-    this.load.spritesheet('player', 'assets/maps/player.png', {
+    this.load.spritesheet('player', 'assets/red_dot.png', {
         frameWidth: 32,
         frameHeight: 32
     });
@@ -37,27 +37,44 @@ function create() {
 
     // Create layers
     const backgroundLayer = map.createLayer('background', tileset, 0, 0);
-    const treeLayer = map.createLayer('trees', tileset, 0, 0);
 
-    // Apply collision ONLY on background
+    // Apply collision to tiles that have "collide: true" set in Tiled
     backgroundLayer.setCollisionByProperty({ collide: true });
 
-    // Create player sprite
-    player = this.physics.add.sprite(100, 100, 'player');
+      // Only allow tile ID 112 to be a valid walkable tile
+    const walkableTileId = 112;
+    const walkableTiles = [];
+    backgroundLayer.forEachTile(tile => {
+        if (tile.index === walkableTileId) {
+            walkableTiles.push(tile);
+        }
+    });
+
+    if (!walkableTiles.length) {
+        console.error(`No walkable tiles with ID ${walkableTileId} found!`);
+        return;
+    }
+
+    // Pick a random walkable tile
+    const spawnTile = Phaser.Utils.Array.GetRandom(walkableTiles);
+    const worldX = spawnTile.getCenterX();
+    const worldY = spawnTile.getCenterY();
+
+    // Create player at random walkable tile
+    player = this.physics.add.sprite(worldX, worldY, 'player');
     player.setCollideWorldBounds(true);
 
     // Set depth for rendering order
-    backgroundLayer.setDepth(0); // Background at depth 0
-    player.setDepth(10);          // Player at depth 1
-    treeLayer.setDepth(20);       // Trees at depth 2
+    backgroundLayer.setDepth(0);
+    player.setDepth(10);
 
     // Enable collision between player and background
     this.physics.add.collider(player, backgroundLayer);
 
-    // Optional: camera follow
+    // Camera follow
     this.cameras.main.startFollow(player);
 
-    // Input for movement
+    // Input
     this.cursors = this.input.keyboard.createCursorKeys();
 }
 
@@ -65,7 +82,7 @@ function update() {
     const speed = 160;
     player.body.setVelocity(0);
 
-    let isMoving = false; // Flag to check if the player is moving
+    let isMoving = false;
 
     if (this.cursors.left.isDown) {
         player.body.setVelocityX(-speed);
@@ -86,7 +103,6 @@ function update() {
     // Normalize diagonal movement
     player.body.velocity.normalize().scale(speed);
 
-    // Log the player's position if moving
     if (isMoving) {
         console.log(`Player Position: x=${player.x}, y=${player.y}`);
     }
