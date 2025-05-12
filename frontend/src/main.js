@@ -108,22 +108,44 @@ function update() {
     const speed = 160;
     player.body.setVelocity(0);
 
+    let isMoving = false;
+
+    // Horizontal movement
     if (this.cursors.left.isDown) {
         player.body.setVelocityX(-speed);
-        player.anims.play('walk-left', true);
+        isMoving = true;
     } else if (this.cursors.right.isDown) {
         player.body.setVelocityX(speed);
-        player.anims.play('walk-right', true);
-    } else if (this.cursors.up.isDown) {
+        isMoving = true;
+    }
+
+    // Vertical movement
+    if (this.cursors.up.isDown) {
         player.body.setVelocityY(-speed);
-        player.anims.play('walk-up', true);
+        isMoving = true;
     } else if (this.cursors.down.isDown) {
         player.body.setVelocityY(speed);
+        isMoving = true;
+    }
+
+    // Normalize and scale the velocity so diagonal movement isn't faster
+    player.body.velocity.normalize().scale(speed);
+
+    // Set animations based on direction
+    if (this.cursors.left.isDown) {
+        player.anims.play('walk-left', true);
+    } else if (this.cursors.right.isDown) {
+        player.anims.play('walk-right', true);
+    } else if (this.cursors.up.isDown) {
+        player.anims.play('walk-up', true);
+    } else if (this.cursors.down.isDown) {
         player.anims.play('walk-down', true);
     } else {
         player.anims.stop();
     }
 
-    // Normalize diagonal movement
-    player.body.velocity.normalize().scale(speed);
+    // Log coordinates
+    if (isMoving) {
+        console.log(`Player Position: x=${player.x.toFixed(2)}, y=${player.y.toFixed(2)}`);
+    }
 }
