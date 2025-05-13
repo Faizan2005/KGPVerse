@@ -8,10 +8,12 @@ import (
 )
 
 func main() {
+	// Start broadcast handler
+	go helpers.BroadcastMessages()
 
 	http.HandleFunc("/ws", helpers.GetConn)
 
-	log.Printf("Listening for connections")
+	log.Printf("WebSocket server started on :3333")
 	err := http.ListenAndServe(":3333", nil)
 	helpers.ChkError(err)
 }
