@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 
+const ws = new WebSocket("ws://localhost:3333/ws")
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     physics: {
         default: 'arcade',
         arcade: {
@@ -55,7 +56,7 @@ function create() {
     const spawnTile = overlayLayer.findByIndex(112); // Assuming 112 is a walkable tile
     const worldX = spawnTile.getCenterX();
     const worldY = spawnTile.getCenterY();
-
+  
     player = this.physics.add.sprite(worldX, worldY, 'player');
     player.setCollideWorldBounds(true);
     player.setScale(2); // Scale up to 32px x 32px
@@ -71,10 +72,10 @@ function create() {
     this.physics.add.collider(player, overlayLayer);
     this.physics.add.collider(player, objectsLayer);
 
-    // Optional: camera follow
+    // Camera follow
     this.cameras.main.startFollow(player);
 
-    // Input for movement
+    // Input
     this.cursors = this.input.keyboard.createCursorKeys();
 
     // Create animations
@@ -103,6 +104,10 @@ function create() {
         repeat: -1
     });
 }
+
+ws.onopen = function (event) {
+    alert('You are Connected to WebSocket Server');
+};
 
 function update() {
     const speed = 160;
@@ -146,6 +151,7 @@ function update() {
 
     // Log coordinates
     if (isMoving) {
-        console.log(`Player Position: x=${player.x.toFixed(2)}, y=${player.y.toFixed(2)}`);
+        ws.send(JSON.stringify({'x': player.x, 'y': player.y, 'name': player.name}));
+        console.log(`Player Position: x=${player.x}, y=${player.y}`);
     }
 }
