@@ -214,12 +214,24 @@ function update() {
         // Reset velocity
         npc.body.setVelocity(0);
 
-        // Set velocity based on direction
+        // Set velocity and animation based on direction
         switch (data.direction) {
-            case 'right': npc.body.setVelocityX(npcSpeed); break;
-            case 'down':  npc.body.setVelocityY(npcSpeed); break;
-            case 'left':  npc.body.setVelocityX(-npcSpeed); break;
-            case 'up':    npc.body.setVelocityY(-npcSpeed); break;
+            case 'right': 
+                npc.body.setVelocityX(npcSpeed);
+                npc.anims.play('walk-right', true);
+                break;
+            case 'down':  
+                npc.body.setVelocityY(npcSpeed);
+                npc.anims.play('walk-down', true);
+                break;
+            case 'left':  
+                npc.body.setVelocityX(-npcSpeed);
+                npc.anims.play('walk-left', true);
+                break;
+            case 'up':    
+                npc.body.setVelocityY(-npcSpeed);
+                npc.anims.play('walk-up', true);
+                break;
         }
 
         // Update steps
@@ -229,6 +241,8 @@ function update() {
         if (data.steps >= maxSteps) {
             data.steps = 0;
             data.direction = nextDirection(data.direction);
+            // Stop animation when changing direction
+            npc.anims.stop();
         }
     });
 
