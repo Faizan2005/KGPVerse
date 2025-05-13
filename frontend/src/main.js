@@ -52,8 +52,15 @@ function create() {
     this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
     this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
 
-    // Create player at a random walkable tile
-    const spawnTile = overlayLayer.findByIndex(112); // Assuming 112 is a walkable tile
+    const matchingTiles = overlayLayer.getTilesWithin(0, 0, map.width, map.height)
+        .filter(tile => tile.index === 308);
+
+    if (!matchingTiles.length) {
+        console.error("No walkable tiles with index 308 found.");
+        return; // or handle fallback spawn logic
+    }
+
+    const spawnTile = Phaser.Utils.Array.GetRandom(matchingTiles);
     const worldX = spawnTile.getCenterX();
     const worldY = spawnTile.getCenterY();
   
@@ -150,8 +157,12 @@ function update() {
     }
 
     // Log coordinates
-    if (isMoving) {
-        ws.send(JSON.stringify({'x': player.x, 'y': player.y, 'name': player.name}));
+    if (isMoving && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            'x': player.x,
+            'y': player.y,
+            'name': player.name
+        }));
         console.log(`Player Position: x=${player.x}, y=${player.y}`);
     }
 }
