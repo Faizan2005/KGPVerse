@@ -8,7 +8,7 @@ const config = {
     physics: {
         default: 'arcade',
         arcade: {
-            debug: true, // set to false if you don't want collision boxes
+            debug: false, // set to false if you don't want collision boxes
         }
     },
     scene: {
@@ -23,11 +23,11 @@ const game = new Phaser.Game(config);
 let player;
 
 function preload() {
-    this.load.tilemapTiledJSON('citymap', 'assets/maps/map.json');
+    this.load.tilemapTiledJSON('citymap', 'assets/maps/dummy.json'); 
     this.load.image('citytiles', 'assets/maps/city.png');
-    this.load.spritesheet('player', 'assets/red_dot.png', {
-        frameWidth: 32,
-        frameHeight: 32
+    this.load.spritesheet('player', 'assets/sprite.png', {
+        frameWidth: 16,
+        frameHeight: 16
     });
 }
 
@@ -38,45 +38,71 @@ function create() {
 
     // Create layers
     const backgroundLayer = map.createLayer('background', tileset, 0, 0);
+    const overlayLayer = map.createLayer('overlay', tileset, 0, 0);
+    const objectsLayer = map.createLayer('objects', tileset, 0, 0);
+    const frontLayer = map.createLayer('front', tileset, 0, 0);
 
-    // Apply collision to tiles that have "collide: true" set in Tiled
-    backgroundLayer.setCollisionByProperty({ collide: true });
+    // Apply collision to overlay and objects layers
+    overlayLayer.setCollisionByProperty({ collide: true });
+    objectsLayer.setCollisionByProperty({ collide: true });
 
-      // Only allow tile ID 112 to be a valid walkable tile
-    const walkableTileId = 112;
-    const walkableTiles = [];
-    backgroundLayer.forEachTile(tile => {
-        if (tile.index === walkableTileId) {
-            walkableTiles.push(tile);
-        }
-    });
+    // Set world bounds to match the map size
+    const mapWidth = map.widthInPixels;
+    const mapHeight = map.heightInPixels;
+    this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
+    this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
 
-    if (!walkableTiles.length) {
-        console.error(`No walkable tiles with ID ${walkableTileId} found!`);
-        return;
-    }
-
-    // Pick a random walkable tile
-    const spawnTile = Phaser.Utils.Array.GetRandom(walkableTiles);
+    // Create player at a random walkable tile
+    const spawnTile = overlayLayer.findByIndex(112); // Assuming 112 is a walkable tile
     const worldX = spawnTile.getCenterX();
     const worldY = spawnTile.getCenterY();
-
-    // Create player at random walkable tile
+  
     player = this.physics.add.sprite(worldX, worldY, 'player');
     player.setCollideWorldBounds(true);
+    player.setScale(2); // Scale up to 32px x 32px
 
     // Set depth for rendering order
     backgroundLayer.setDepth(0);
-    player.setDepth(10);
+    overlayLayer.setDepth(1);
+    objectsLayer.setDepth(2);
+    player.setDepth(3);
+    frontLayer.setDepth(4);
 
-    // Enable collision between player and background
-    this.physics.add.collider(player, backgroundLayer);
+    // Enable collision between player and layers
+    this.physics.add.collider(player, overlayLayer);
+    this.physics.add.collider(player, objectsLayer);
 
     // Camera follow
     this.cameras.main.startFollow(player);
 
     // Input
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    // Create animations
+    this.anims.create({
+        key: 'walk-down',
+        frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+        frameRate: 10,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'walk-up',
+        frames: this.anims.generateFrameNumbers('player', { start: 4, end: 7 }),
+        frameRate: 10,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'walk-right',
+        frames: this.anims.generateFrameNumbers('player', { start: 8, end: 11 }),
+        frameRate: 10,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'walk-left',
+        frames: this.anims.generateFrameNumbers('player', { start: 12, end: 15 }),
+        frameRate: 10,
+        repeat: -1
+    });
 }
 
 ws.onopen = function (event) {
@@ -89,6 +115,7 @@ function update() {
 
     let isMoving = false;
 
+    // Horizontal movement
     if (this.cursors.left.isDown) {
         player.body.setVelocityX(-speed);
         isMoving = true;
@@ -97,6 +124,7 @@ function update() {
         isMoving = true;
     }
 
+    // Vertical movement
     if (this.cursors.up.isDown) {
         player.body.setVelocityY(-speed);
         isMoving = true;
@@ -105,9 +133,23 @@ function update() {
         isMoving = true;
     }
 
-    // Normalize diagonal movement
+    // Normalize and scale the velocity so diagonal movement isn't faster
     player.body.velocity.normalize().scale(speed);
 
+    // Set animations based on direction
+    if (this.cursors.left.isDown) {
+        player.anims.play('walk-left', true);
+    } else if (this.cursors.right.isDown) {
+        player.anims.play('walk-right', true);
+    } else if (this.cursors.up.isDown) {
+        player.anims.play('walk-up', true);
+    } else if (this.cursors.down.isDown) {
+        player.anims.play('walk-down', true);
+    } else {
+        player.anims.stop();
+    }
+
+    // Log coordinates
     if (isMoving) {
         ws.send(JSON.stringify({'x': player.x, 'y': player.y, 'name': player.name}));
         console.log(`Player Position: x=${player.x}, y=${player.y}`);
